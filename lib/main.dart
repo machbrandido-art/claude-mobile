@@ -1,185 +1,114 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
 
 void main() {
   runApp(const ClaudeMobileApp());
 }
 
-class ClaudeMobileApp extends StatefulWidget {
+class ClaudeMobileApp extends StatelessWidget {
   const ClaudeMobileApp({super.key});
 
   @override
-  State<ClaudeMobileApp> createState() => _ClaudeMobileAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Claude Code Mobile',
+      theme: ThemeData.dark(useMaterial3: true),
+      home: const HomePage(),
+    );
+  }
 }
 
-class _ClaudeMobileAppState extends State<ClaudeMobileApp> {
-  ThemeMode themeMode = ThemeMode.dark;
-  String selectedModel = 'meta/llama-3.3-70b-instruct';
-
-  final List<String> models = [
-    'meta/llama-3.3-70b-instruct',
-    'qwen/qwen3-coder-480b-a35b-instruct',
-    'deepseek-ai/deepseek-r1',
-  ];
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  void initState() {
-    super.initState();
-    loadSettings();
-  }
+  State<HomePage> createState() => _HomePageState();
+}
 
-  Future<void> loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      themeMode =
-          prefs.getBool('darkMode') ?? true ? ThemeMode.dark : ThemeMode.light;
-      selectedModel = prefs.getString('model') ?? models.first;
-    });
-  }
+class _HomePageState extends State<HomePage> {
+  String selectedModel = 'meta/llama-3.3-70b-instruct';
 
-  Future<void> toggleTheme(bool dark) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('darkMode', dark);
-    setState(() {
-      themeMode = dark ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
-
-  Future<void> selectModel(String model) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('model', model);
-    setState(() {
-      selectedModel = model;
-    });
-  }
-
-  Future<void> runTermuxCommand(String command) async {
+  Future<void> runTermux(String command) async {
     final intent = AndroidIntent(
       action: 'com.termux.RUN_COMMAND',
       package: 'com.termux',
       componentName: 'com.termux/com.termux.app.RunCommandService',
-      flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
-      arguments: <String, dynamic>{
-        'com.termux.RUN_COMMAND_PATH':
-            '/data/data/com.termux/files/usr/bin/bash',
-        'com.termux.RUN_COMMAND_ARGUMENTS': <String>[
-          '-lc',
-          'source ~/.bashrc; $command'
-        ],
-        'com.termux.RUN_COMMAND_WORKDIR':
-            '/data/data/com.termux/files/home',
+      extras: <String, dynamic>{
+        'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/usr/bin/bash',
+        'com.termux.RUN_COMMAND_ARGUMENTS': <String>['-lc', command],
+        'com.termux.RUN_COMMAND_WORKDIR': '/data/data/com.termux/files/home',
         'com.termux.RUN_COMMAND_BACKGROUND': true,
       },
     );
 
-    await intent.launch();
+    try {
+      await intent.launch();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sent: $command')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = themeMode == ThemeMode.dark;
-
-    return MaterialApp(
-      title: 'Claude Code Mobile',
-      themeMode: themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD97757),
-          brightness: Brightness.light,
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD97757),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0D0D0D),
-      ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Claude Code Mobile'),
-          actions: [
-            IconButton(
-              tooltip: 'Toggle theme',
-              icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-              onPressed: () => toggleTheme(!isDark),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Claude Code Mobile')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton(
+              onPressed: () => runTermux('echo test-ok > ~/claude-mobile-test.txt'),
+              child: const Text('Test Termux'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => runTermux('ccr start'),
+              child: const Text('Start CCR'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => runTermux('ccr code'),
+              child: const Text('Open Claude Code'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => runTermux('ccr stop'),
+              child: const Text('Stop CCR'),
+            ),
+            const SizedBox(height: 24),
+            const Text('Selected model'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: selectedModel,
+              items: const [
+                DropdownMenuItem(
+                  value: 'meta/llama-3.3-70b-instruct',
+                  child: Text('Llama 3.3 70B'),
+                ),
+                DropdownMenuItem(
+                  value: 'qwen/qwen3-coder-480b-a35b-instruct',
+                  child: Text('Qwen3 Coder'),
+                ),
+                DropdownMenuItem(
+                  value: 'deepseek-ai/deepseek-r1',
+                  child: Text('DeepSeek R1'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => selectedModel = value);
+                }
+              },
             ),
           ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'NVIDIA NIM',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Selected model:\n$selectedModel'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Choose model'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: models.map((model) {
-                  final selected = model == selectedModel;
-                  return ChoiceChip(
-                    label: Text(model.split('/').last),
-                    selected: selected,
-                    onSelected: (_) => selectModel(model),
-                  );
-                }).toList(),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start CCR'),
-                  onPressed: () => runTermuxCommand('ccr start'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.terminal),
-                  label: const Text('Open Claude Code'),
-                  onPressed: () => runTermuxCommand(
-                    'ccr code -- --model $selectedModel',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.stop),
-                  label: const Text('Stop CCR'),
-                  onPressed: () => runTermuxCommand('ccr stop'),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
