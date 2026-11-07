@@ -24,6 +24,23 @@ jobs:
         with:
           channel: stable
 
+      - name: Create Android platform
+        run: flutter create --platforms=android --org com.machbrandido .
+
+      - name: Add Termux RUN_COMMAND permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          s = p.read_text()
+          if 'com.termux.permission.RUN_COMMAND' not in s:
+              s = s.replace(
+                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+                  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />'
+              )
+              p.write_text(s)
+          PY
+
       - name: Install dependencies
         run: flutter pub get
 
