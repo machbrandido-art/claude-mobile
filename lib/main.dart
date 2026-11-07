@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
             const Text('Selected model'),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: selectedModel,
+              value: selectedModel,
               items: const [
                 DropdownMenuItem(
                   value: 'meta/llama-3.3-70b-instruct',
