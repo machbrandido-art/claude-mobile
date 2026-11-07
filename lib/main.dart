@@ -26,9 +26,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String selectedModel = 'meta/llama-3.3-70b-instruct';
+  String status = 'Ready';
 
   Future<void> runTermux(String command) async {
+    setState(() => status = 'Sending: $command');
+
     final intent = AndroidIntent(
       action: 'com.termux.RUN_COMMAND',
       package: 'com.termux',
@@ -43,15 +45,9 @@ class _HomePageState extends State<HomePage> {
 
     try {
       await intent.launch();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sent: $command')),
-      );
+      setState(() => status = 'Sent successfully: $command');
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed: $e')),
-      );
+      setState(() => status = 'FAILED: $e');
     }
   }
 
@@ -64,6 +60,13 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(status),
+              ),
+            ),
+            const SizedBox(height: 16),
             FilledButton(
               onPressed: () => runTermux('echo test-ok > ~/claude-mobile-test.txt'),
               child: const Text('Test Termux'),
@@ -82,31 +85,6 @@ class _HomePageState extends State<HomePage> {
             FilledButton(
               onPressed: () => runTermux('ccr stop'),
               child: const Text('Stop CCR'),
-            ),
-            const SizedBox(height: 24),
-            const Text('Selected model'),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: selectedModel,
-              items: const [
-                DropdownMenuItem(
-                  value: 'meta/llama-3.3-70b-instruct',
-                  child: Text('Llama 3.3 70B'),
-                ),
-                DropdownMenuItem(
-                  value: 'qwen/qwen3-coder-480b-a35b-instruct',
-                  child: Text('Qwen3 Coder'),
-                ),
-                DropdownMenuItem(
-                  value: 'deepseek-ai/deepseek-r1',
-                  child: Text('DeepSeek R1'),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => selectedModel = value);
-                }
-              },
             ),
           ],
         ),
