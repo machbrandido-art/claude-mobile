@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
       action: 'com.termux.RUN_COMMAND',
       package: 'com.termux',
       componentName: 'com.termux/com.termux.app.RunCommandService',
-      extras: <String, dynamic>{
+      arguments: <String, dynamic>{
         'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/usr/bin/bash',
         'com.termux.RUN_COMMAND_ARGUMENTS': <String>['-lc', command],
         'com.termux.RUN_COMMAND_WORKDIR': '/data/data/com.termux/files/home',
