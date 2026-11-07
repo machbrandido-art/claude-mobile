@@ -34,7 +34,7 @@ class _HomePageState extends State<HomePage> {
     final intent = AndroidIntent(
       action: 'com.termux.RUN_COMMAND',
       package: 'com.termux',
-      componentName: 'com.termux/com.termux.app.RunCommandService',
+      componentName: 'com.termux.app.RunCommandService',
       arguments: <String, dynamic>{
         'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/usr/bin/bash',
         'com.termux.RUN_COMMAND_ARGUMENTS': <String>['-lc', command],
